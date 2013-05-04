@@ -12,7 +12,7 @@ type Block = Either Statement Boolean
 data ControlFlowGraph = CFG { labels :: M.Map Int Block, 
                               edges  :: M.Map Int (S.Set Int)}
 
-decorate :: Statement -> M.Map Int Statement
+decorate :: Statement -> M.Map Int Block
 decorate = undefined
 
 controlFlowGraph :: Statement -> ControlFlowGraph
