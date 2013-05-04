@@ -1,6 +1,6 @@
 \begin{code}
 {-# LANGUAGE TupleSections #-}
-module ControlFlow(Block, ControlFlowGraph(..), controlFlowGraph, decorate) where
+module ControlFlow where
 
 import AST
 import Control.Applicative
