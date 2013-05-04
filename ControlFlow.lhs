@@ -36,6 +36,12 @@ getIncrement = get >>= \i -> put (i+1) >> return i
 decorate2 :: Statement -> Statement -> State Int [(Int,Block)]
 decorate2 s1 s2 = (++) <$> (decorate' s1) <*> (decorate' s2)
 
+displayLabeledGraph :: M.Map Int Block -> IO ()
+displayLabeledGraph = mapM_ (putStrLn . showBlock) . M.toList where
+  showBlock (i,(Left (Assign s a))) = "[" ++ (s ++ " := " ++ (show a)) ++ "]" ++ (show i)
+  showBlock (i,(Left s)) = "[" ++ (show s) ++ "]" ++ (show i)
+  showBlock (i,(Right b)) = "[" ++ (show b) ++ "]" ++ (show i)
+
 ast :: Statement
 ast = Seq (Assign "x" (BinOp Plus (Number 5) (Number 3))) s where
   s = Seq (Assign "y" (Number 3)) s2
