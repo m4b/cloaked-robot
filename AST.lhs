@@ -11,6 +11,7 @@ data AOP =
      Times | 
      Minus deriving (Eq, Show)
 
+
 data BOP = 
      And | 
      Or deriving (Eq, Show)
@@ -31,7 +32,7 @@ data Boolean =
      T | 
      F | 
      Not Boolean | 
-     BoolOp BOP Arith Arith | 
+     BoolOp BOP Boolean Boolean | 
      RelOp REL Arith Arith deriving (Eq, Show)
 
 data Statement = 
@@ -43,3 +44,4 @@ data Statement =
 
 \end{code}
 
+As can be seen, the abstract syntax, thanks to Haskell's recursive data types, almost exactly mirrors the Backus-Naur form given in the assignment.

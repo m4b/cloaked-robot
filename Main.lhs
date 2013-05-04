@@ -34,6 +34,9 @@ This report contains our implementation of a scanner and parser for a basic prog
 
 It is divided up into several sections, roughly corresponding to the problems given in the specification, each a Haskell module. 
 
+
+%include AST.lhs
+
 \section{Main module}
 
 The main module puts everything together.
@@ -44,11 +47,15 @@ The main module puts everything together.
 module Main where
 
 import System.Environment
+import AST
+import Input
 
 main = do 
      [file] <- getArgs
      contents <- readFile file
-     print contents     
+     case sparse contents of
+          Right ast -> print ast
+          Left err -> print err
 
 \end{code}
 
