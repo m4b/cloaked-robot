@@ -1,6 +1,6 @@
 \begin{code}
 {-# LANGUAGE TupleSections #-}
-module ControlFlow(Block, ControlFlowGraph(..), controlFlowGraph, decorate) where
+module ControlFlow where
 
 import AST
 import Control.Applicative
@@ -38,9 +38,8 @@ decorate2 s1 s2 = (++) <$> (decorate' s1) <*> (decorate' s2)
 
 displayLabeledGraph :: M.Map Int Block -> IO ()
 displayLabeledGraph = mapM_ (putStrLn . showBlock) . M.toList where
-  showBlock (i,(Left (Assign s a))) = "[" ++ (s ++ " := " ++ (show a)) ++ "]" ++ (show i)
-  showBlock (i,(Left s)) = "[" ++ (show s) ++ "]" ++ (show i)
-  showBlock (i,(Right b)) = "[" ++ (show b) ++ "]" ++ (show i)
+  showBlock (i,Left s) = "[" ++ (pettyShowStatement s) ++ "]" ++ (show i)
+  showBlock (i,Right b) = "[" ++ (pettyShowBool b) ++ "]" ++ (show i)
 
 ast :: Statement
 ast = Seq (Assign "x" (BinOp Plus (Number 5) (Number 3))) s where
@@ -50,6 +49,6 @@ ast = Seq (Assign "x" (BinOp Plus (Number 5) (Number 3))) s where
   s4 = If (T) (Assign "y" (BinOp Plus (Var "y") (Number 1))) Skip
 
 controlFlowGraph :: Statement -> ControlFlowGraph
-controlFlowGraph = undefined
+controlFlowGraph g = CFG (decorate g) undefined undefined
 
 \end{code}
