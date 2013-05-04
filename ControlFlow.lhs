@@ -19,19 +19,29 @@ decorate = M.fromList . flip evalState 0 . decorate'
 
 decorate' :: Statement -> State Int [(Int,Block)]
 decorate' a@(Assign s arith) = (:[]) <$> (,Left a) <$> getIncrement
+
 decorate' Skip = (:[]) <$> (,Left Skip) <$> getIncrement
+
 decorate' (Seq s1 s2) = decorate2 s1 s2
 
-decorate' con@(If bool s1 s2) = (:) <$> (,Right bool) <$> getIncrement
+decorate' con@(If bool s1 s2) = (:) <$> (,Right bool) 
+                                    <$> getIncrement
                                     <*> decorate2 s1 s2
 
-decorate' whl@(While bool s) = undefined
+decorate' whl@(While bool s) = (:) <$> (,Right bool) <$> getIncrement <*> decorate' s
 
 getIncrement :: Num s => State s s
 getIncrement = get >>= \i -> put (i+1) >> return i
 
 decorate2 :: Statement -> Statement -> State Int [(Int,Block)]
 decorate2 s1 s2 = (++) <$> (decorate' s1) <*> (decorate' s2)
+
+ast :: Statement
+ast = Seq (Assign "x" (BinOp Plus (Number 5) (Number 3))) s where
+  s = Seq (Assign "y" (Number 3)) s2
+  s2 = Seq (While (RelOp Less (Var "y") (Var "x")) s4) s3
+  s3 = Skip
+  s4 = If (T) (Assign "y" (BinOp Plus (Var "y") (Number 1))) Skip
 
 controlFlowGraph :: Statement -> ControlFlowGraph
 controlFlowGraph = undefined
