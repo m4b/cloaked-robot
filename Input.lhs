@@ -108,7 +108,7 @@ orParser = do
 relation = 
          do {string ">"; return $ RelOp Greater} <|>
          do {string "<"; return $ RelOp Less} <|>
-         do {string "="; return $ RelOp Equal} <|>
+         do {string "=="; return $ RelOp Equal} <|>
          do {string ">=" <|> string "≥"; return $ RelOp Geq} <|>
          do {string "<=" <|> string "≤"; return $ RelOp Leq}
 
