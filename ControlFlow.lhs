@@ -1,6 +1,6 @@
 \begin{code}
 
-module ControlFlow(ControlFlowGraph(..), controlFlowGraph, decorate) where
+module ControlFlow(Block, ControlFlowGraph(..), controlFlowGraph, decorate) where
 
 import AST
 
