@@ -77,8 +77,7 @@ pettyShowBool (RelOp rel a1 a2) = pettyShowArith a1 ++ " "
 pettyShowStatement :: Statement -> String
 pettyShowStatement (Assign s a) = s ++ " := " ++ pettyShowArith a
 pettyShowStatement Skip = "Skip"
-pettyShowStatement (Seq s1 s2) = pettyShowStatement s1 ++ ['\n']
-                              ++ ";"
+pettyShowStatement (Seq s1 s2) = pettyShowStatement s1 ++";" ++ ['\n']
                               ++ pettyShowStatement s2 ++ ['\n']
 pettyShowStatement (If b s1 s2) = "if " ++ pettyShowBool b ++ ['\n']
                                ++ "then " ++ pettyShowStatement s1 ++ ['\n']
