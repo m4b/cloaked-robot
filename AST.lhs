@@ -46,15 +46,15 @@ data Statement =
 
 pettyShowAOP :: AOP -> String
 pettyShowAOP aop = fromJust . lookup aop $ ops where
-  ops = zip [Plus .. Minus] ["+","×","−"]
+  ops = zip [Plus .. Minus] ["+","*","-"]
 
 pettyShowBOP :: BOP -> String
-pettyShowBOP And = "∧"
-pettyShowBOP Or = "∨"
+pettyShowBOP And = "/\\"
+pettyShowBOP Or = "\\/"
 
 pettyShowREL :: REL -> String
 pettyShowREL rel = fromJust . lookup rel $ rels where
-  rels = zip [Equal .. Geq] ["==","<","≤",">","≥"]
+  rels = zip [Equal .. Geq] ["==","<","<=",">",">="]
 
 pettyShowArith :: Arith -> String
 pettyShowArith (Var s) = s
@@ -64,9 +64,9 @@ pettyShowArith (BinOp aop a1 a2) = pettyShowArith a1 ++ " "
                                 ++ pettyShowArith a2  
 
 pettyShowBool :: Boolean -> String
-pettyShowBool T = "⊤"
-pettyShowBool F = "⊥"
-pettyShowBool (Not b) = "¬" ++ pettyShowBool b
+pettyShowBool T = "true"
+pettyShowBool F = "false"
+pettyShowBool (Not b) = "not" ++ pettyShowBool b
 pettyShowBool (BoolOp bop b1 b2) = pettyShowBool b1 ++ " "
                                 ++ pettyShowBOP bop ++ " "
                                 ++ pettyShowBool b2 
@@ -75,7 +75,7 @@ pettyShowBool (RelOp rel a1 a2) = pettyShowArith a1 ++ " "
                                ++ pettyShowArith a2     
 
 pettyShowStatement :: Statement -> String
-pettyShowStatement (Assign s a) = s ++ " ← " ++ pettyShowArith a
+pettyShowStatement (Assign s a) = s ++ " := " ++ pettyShowArith a
 pettyShowStatement Skip = "Skip"
 pettyShowStatement (Seq s1 s2) = pettyShowStatement s1 ++ ['\n']
                               ++ ";"
