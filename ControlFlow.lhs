@@ -1,3 +1,7 @@
+\section{Control Flow Diagrams}
+
+In this section we compute the control flow graph for a given AST.
+
 \begin{code}
 {-# LANGUAGE TupleSections #-}
 module ControlFlow where

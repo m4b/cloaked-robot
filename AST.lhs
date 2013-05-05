@@ -166,13 +166,3 @@ main' = do
 
 \end{code}
 
---
-
-     Assign String Arith | 
-     Skip | 
-     Seq Statement Statement | 
-     If Boolean Statement Statement | 
-     While Boolean Statement deriving (Eq, Show)
-
-     Number Int | 
-     BinOp AOP Arith Arith deriving (Eq, Show)

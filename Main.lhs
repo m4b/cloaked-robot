@@ -37,7 +37,7 @@ It is divided up into several sections, roughly corresponding to the problems gi
 
 %include AST.lhs
 %include Input.lhs
-% include ControlFlow.lhs
+%include ControlFlow.lhs
 %include ReachingDefinition.lhs
 
 \section{Main module}
