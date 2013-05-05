@@ -9,7 +9,6 @@ This gave us a great amount of flexibility for parsing input files.  MENTION UNI
 module Input(sparse) where
 
 import AST 
-
 import Text.ParserCombinators.Parsec
 
 type Program = [Statement]
@@ -143,6 +142,5 @@ whilestatement = do
                  
 
 sparse = parse statement "(syntax error)"
-
 
 \end{code}

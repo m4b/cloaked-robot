@@ -44,6 +44,14 @@ data Statement =
      If Boolean Statement Statement | 
      While Boolean Statement deriving (Eq, Show)
 
+\end{code}
+
+As can be seen, the abstract syntax, thanks to Haskell's recursive data types, almost exactly mirrors the Backus-Naur form given in the assignment.
+
+In addition, we wrote a pretty printer for ASTs, as follows:
+
+\begin{code}
+
 pettyShowAOP :: AOP -> String
 pettyShowAOP aop = fromJust . lookup aop $ ops where
   ops = zip [Plus .. Minus] ["+","*","-"]
@@ -88,4 +96,83 @@ pettyShowStatement (While b s) = "while " ++ pettyShowBool b ++ ['\n']
 
 \end{code}
 
-As can be seen, the abstract syntax, thanks to Haskell's recursive data types, almost exactly mirrors the Backus-Naur form given in the assignment.
+Lastly, We also wrote a printer that outputs dot syntax for drawing pretty graphs for the abstract syntax of a program.
+
+\begin{code}
+
+dotPrinter' :: (Num t, Show t) => Statement -> t -> ([Char], t)
+dotPrinter' (Assign s a) counter = 
+   let (arith,counter') = dotPrinterArith a counter
+       s1 = "s_" ++ (show counter')
+       s2 = "s_" ++ (show (counter'+1))
+       string = ( s1 ++ " [label=\":=\"];\n" ++ 
+                  s2 ++ " [label=\"" ++ s ++ "\"];\n" ++
+                  s1 ++ " -> " ++ s2 ++ ";\n" ++  
+                  s1 ++ " -> " ++ "a_" ++ (show counter') ++ ";\n" ++
+                  arith ++ ";\n") in
+    (string,counter'+2)
+
+dotPrinterArith :: (Num t, Show t) => Arith -> t -> ([Char], t)
+dotPrinterArith (Var s) counter = 
+   let v1 = "a_" ++ (show counter)
+       v2 = "a_" ++ (show (counter +1))
+       string = ( v1 ++ " [label=\"variable\"];\n" ++
+                  v2 ++ " [label=\"" ++ s ++ "\"];\n" ++
+                  v1 ++ " -> " ++ v2 ++ ";\n"
+                 ) in
+   (string,(counter+2))
+dotPrinterArith (Number i) counter =
+   let n1 = "a_" ++ (show counter)
+       n2 = "a_" ++ (show (counter +1))
+       string = ( n1 ++ " [label=\"number\"];\n" ++
+                  n2 ++ " [label=\"" ++ (show i) ++ "\"];\n" ++
+                  n1 ++ " -> " ++ n2 ++ ";\n"
+                 ) in
+   (string,(counter+2))
+dotPrinterArith (BinOp aop a1 a2) counter =
+   let (s1,counter') = dotPrinterArith a1 counter
+       (s2,counter'') = dotPrinterArith a2 counter'
+       op = "a_" ++ (show (counter'' +1))
+       string = ( op ++ " [label=\"" ++ (dotAOP aop) ++ "\"];\n" ++
+                  s1 ++ s2 ++
+                  op ++ " -> " ++ "a_" ++ (show counter) ++ ";\n" ++
+                  op ++ " -> " ++ "a_" ++ (show counter')
+                 ) in
+   (string,(counter''+1))
+
+dotAOP :: AOP -> [Char]
+dotAOP (Plus)   = "+"
+dotAOP (Minus)  = "-"
+dotAOP (Times)  = "*"
+
+dotBOP (And)    = "∧"
+dotBOP (Or)     = "∨"
+
+dotREL (Equal)   = "=="
+dotREL (Less)    = "<"
+dotREL (Leq)     = "≤"
+dotREL (Greater) = ">"
+dotREL (Geq)     = "≥"
+
+dotPrinter :: Statement -> [Char]
+dotPrinter x = 
+   ("digraph graphname{\n" ++ (fst (dotPrinter' x 0)) ++ "}")
+
+main' = do
+ putStrLn $ dotPrinter (Assign "x" (BinOp Plus ((BinOp Times (Var "y") (Number 3))) (Number 3)))
+      
+                
+
+
+\end{code}
+
+--
+
+     Assign String Arith | 
+     Skip | 
+     Seq Statement Statement | 
+     If Boolean Statement Statement | 
+     While Boolean Statement deriving (Eq, Show)
+
+     Number Int | 
+     BinOp AOP Arith Arith deriving (Eq, Show)
