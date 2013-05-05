@@ -9,6 +9,8 @@ import Data.List(intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import Debug.Trace
+
 type ReachingDefinition = S.Set (String, Maybe Int)
 
 data ReachingDefinitions = RDS {entry :: M.Map Int ReachingDefinition,
@@ -24,48 +26,50 @@ type ExitEquation = (Int, KillSet, GenSet)
 type EntryEquation = (Int, S.Set Int)
 
 reachingDefinitions :: ControlFlowGraph -> ReachingDefinitions
-reachingDefinitions cfg = RDS entry exit where
-  (entry, exit) = reachingDefinitions' False 1 (S.fromList lbls) 
-                  (initEntry,initExits) cfg 
-    where
-     initEntry = M.union (M.singleton 0 initialSet) empties
-     initExits = M.union (M.singleton 0 initialSet') empties
-     vars = S.toList . determineVars $ cfg
-     initialSet = S.fromList . map (\str -> (str, Nothing)) $ vars
-     initialSet' = initialSet `S.difference` kill `S.union` gen
-     (_,kill,gen) = getExitEquation (S.fromList lbls) 0 
-                     (labels cfg M.! 0)
-     lbls = M.keys . labels $ cfg
-     empties = M.unions . map ((flip M.singleton) S.empty) $ lbls
-    
-reachingDefinitions' :: Bool -> Int -> S.Set Int -> 
-                        (EntryDefs, ExitDefs) -> 
-                        ControlFlowGraph -> (EntryDefs, ExitDefs)
-reachingDefinitions' toStop l lbls (entry, exit) cfg = 
-  if stop then 
-    if isLoop then (entry'', exit'') 
-    else (entry', exit') else (entry'', exit'')
-  where
-   currEntry = (entry M.! l)
-   (_, entEq) = entryEquation l cfg
-   nextEntry = (S.unions exitSets)
-   exitSets = map (exit M.!) (S.toList entEq)
-   currExit = exit M.! l
-   (_,kill,gen) = getExitEquation lbls l (labels cfg M.! l)
-   nextExit = nextEntry `S.difference` kill `S.union` gen
-   nextLabels = (S.toList (outEdges cfg M.! l))
-   stop = null nextLabels || 
-          (currEntry == nextEntry && currExit == nextExit && isLoop)
-   entry' = M.insert l nextEntry entry
-   exit' = M.insert l nextExit exit
-   entry'' = M.unions . map fst $ branches
-   exit'' = M.insert l 
-            ((entry'' M.! l) `S.difference` kill `S.union` gen) exits
-   exits = M.unions . map snd $ branches
-   rdef l = reachingDefinitions' stop l lbls (entry', exit') cfg
-   branches = if toStop then [] else map rdef nextLabels
-   isLoop = (S.size (inEdges cfg M.! l)) > 1
-  
+reachingDefinitions cfg = RDS entries exits where
+  (entries, exits) = reachingDefinitions' (empties, empties) cfg
+  empties = M.unions . map ((flip M.singleton) S.empty) $ lbls
+  lbls = M.keys . labels $ cfg
+
+reachingDefinitions' :: (EntryDefs, ExitDefs) -> ControlFlowGraph -> (EntryDefs, ExitDefs)
+reachingDefinitions' (entries, exits) cfg = 
+  if entries == entries' && exits == exits' 
+    then (entries', exits') 
+    else  reachingDefinitions' (entries', exits') cfg where
+  (entries', exits') = pass cfg (entries, exits)
+
+pass :: ControlFlowGraph -> (EntryDefs, ExitDefs) -> (EntryDefs, ExitDefs)
+pass cfg (entries, exits) = pass' 0 vars lbls (S.empty) cfg (entries, exits) where
+  lbls = S.fromList . M.keys . labels $ cfg
+  vars = determineVars cfg
+
+pass' :: Int -> S.Set String -> S.Set Int -> S.Set Int -> ControlFlowGraph -> (EntryDefs, ExitDefs) -> (EntryDefs, ExitDefs)
+pass' l vars lbls marked cfg (entries, exits) =  
+  if S.null nextLabels then trace ((show l) ++ ": done") (entries', exits') 
+                     else trace ((show l) ++ ": recurse") (entries'', exits'') where
+  (_,kill,gen) = trace ((show l) ++ ": exitEquation: " ++ (show $ getExitEquation lbls l (labels cfg M.! l))) getExitEquation lbls l (labels cfg M.! l)
+  (_, entEq) = trace ((show l) ++ ": entryEquation: " ++ (show $ entryEquation l cfg)) entryEquation l cfg
+  exitSets = map (exits M.!) (S.toList entEq)
+  nextEntry = if l == 0 then initialEntry vars else trace ((show l) ++ ": nextEntry: " ++ (show $ S.unions exitSets)) S.unions exitSets
+  nextExit = trace ((show l) ++ ": nextExit: " ++ (show $ nextEntry `S.difference` kill `S.union` gen)) nextEntry `S.difference` kill `S.union` gen
+  nextLabels = trace ((show l) ++ ": nextLabels: " ++ (show $ (outEdges cfg M.! l) `S.difference` marked)) ((outEdges cfg M.! l) `S.difference` marked)
+  entries' = M.insert l nextEntry entries
+  exits' = M.insert l nextExit exits
+  recurse n = pass' n vars lbls (S.insert l marked) cfg (entries', exits')
+  branches = S.toList . S.map recurse $ nextLabels
+  entries'' = mergeSets . map fst $ branches
+  exits'' = mergeSets . map snd $ branches
+
+mergeSets :: [M.Map Int ReachingDefinition] -> M.Map Int ReachingDefinition
+mergeSets maps = sets where
+  set i = S.unions . map (M.! i) $ maps
+  lbls = head . map M.keys $ maps 
+  sets = M.unions . zipWith (M.singleton) lbls . map set $ lbls
+
+initialEntry :: S.Set String -> ReachingDefinition
+initialEntry = S.map (\str -> (str, Nothing))
+
+
 formatReachingDefinitions :: ReachingDefinitions -> String
 formatReachingDefinitions (RDS entries exits) = 
   (formatEntryDefs entries) ++ "\n" ++ (formatExitDefs exits)
