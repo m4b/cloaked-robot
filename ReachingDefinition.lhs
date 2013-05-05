@@ -25,7 +25,8 @@ type EntryEquation = (Int, S.Set Int)
 
 reachingDefinitions :: ControlFlowGraph -> ReachingDefinitions
 reachingDefinitions cfg = RDS entry exit where
-  (entry, exit) = reachingDefinitions' False 1 (S.fromList lbls) (initEntry,initExits) cfg 
+  (entry, exit) = reachingDefinitions' False 1 (S.fromList lbls) 
+                  (initEntry,initExits) cfg 
     where
      initEntry = M.union (M.singleton 0 initialSet) empties
      initExits = M.union (M.singleton 0 initialSet') empties
@@ -37,10 +38,13 @@ reachingDefinitions cfg = RDS entry exit where
      lbls = M.keys . labels $ cfg
      empties = M.unions . map ((flip M.singleton) S.empty) $ lbls
     
-reachingDefinitions' :: Bool -> Int -> S.Set Int -> (EntryDefs, ExitDefs) -> 
+reachingDefinitions' :: Bool -> Int -> S.Set Int -> 
+                        (EntryDefs, ExitDefs) -> 
                         ControlFlowGraph -> (EntryDefs, ExitDefs)
 reachingDefinitions' toStop l lbls (entry, exit) cfg = 
-  if stop then if isLoop then (entry'', exit'') else (entry', exit') else (entry'', exit'')
+  if stop then 
+    if isLoop then (entry'', exit'') 
+    else (entry', exit') else (entry'', exit'')
   where
    currEntry = (entry M.! l)
    (_, entEq) = entryEquation l cfg
@@ -50,18 +54,21 @@ reachingDefinitions' toStop l lbls (entry, exit) cfg =
    (_,kill,gen) = getExitEquation lbls l (labels cfg M.! l)
    nextExit = nextEntry `S.difference` kill `S.union` gen
    nextLabels = (S.toList (outEdges cfg M.! l))
-   stop = null nextLabels || (currEntry == nextEntry && currExit == nextExit && isLoop)
+   stop = null nextLabels || 
+          (currEntry == nextEntry && currExit == nextExit && isLoop)
    entry' = M.insert l nextEntry entry
    exit' = M.insert l nextExit exit
    entry'' = M.unions . map fst $ branches
-   exit'' = M.insert l ((entry'' M.! l) `S.difference` kill `S.union` gen) exits
+   exit'' = M.insert l 
+            ((entry'' M.! l) `S.difference` kill `S.union` gen) exits
    exits = M.unions . map snd $ branches
    rdef l = reachingDefinitions' stop l lbls (entry', exit') cfg
    branches = if toStop then [] else map rdef nextLabels
    isLoop = (S.size (inEdges cfg M.! l)) > 1
   
 formatReachingDefinitions :: ReachingDefinitions -> String
-formatReachingDefinitions (RDS entries exits) = (formatEntryDefs entries) ++ "\n" ++ (formatExitDefs exits)
+formatReachingDefinitions (RDS entries exits) = 
+  (formatEntryDefs entries) ++ "\n" ++ (formatExitDefs exits)
    
 formatEntryDefs :: EntryDefs -> String           
 formatEntryDefs entries = intercalate "\n" defs where
@@ -69,10 +76,12 @@ formatEntryDefs entries = intercalate "\n" defs where
   defs = zipWith formatEntryDef keys (map (entries M.!) keys)
 
 formatEntryDef :: Int -> ReachingDefinition -> String
-formatEntryDef l def = "RD○(" ++ (show l) ++ ") = " ++ (formatReachingDef def)
+formatEntryDef l def = "RD○(" ++ (show l) ++ ") = " ++ 
+                       (formatReachingDef def)
 
 formatReachingDef :: ReachingDefinition -> String
-formatReachingDef (S.toList -> defs) = "{" ++ (intercalate "," . map formatElement $ defs) ++ "}"
+formatReachingDef (S.toList -> defs) = 
+  "{" ++ (intercalate "," . map formatElement $ defs) ++ "}"
 
 formatExitDefs :: ExitDefs -> String
 formatExitDefs exits = intercalate "\n" defs where
@@ -80,8 +89,8 @@ formatExitDefs exits = intercalate "\n" defs where
   defs = zipWith formatExitDef keys (map (exits M.!) keys)
   
 formatExitDef :: Int -> ReachingDefinition -> String
-formatExitDef l def = "RD●(" ++ (show l) ++ ") = " ++ (formatReachingDef def)
-  
+formatExitDef l def = "RD●(" ++ (show l) ++ ") = " ++ 
+                      (formatReachingDef def)
            
 formatEquations :: ControlFlowGraph -> String
 formatEquations cfg = entries ++ "\n" ++ exits where
@@ -160,8 +169,8 @@ getVars (Right bool) = getBoolVars bool
 getVars _ = S.empty
 
 getBoolVars :: Boolean -> S.Set String
-getBoolVars (BoolOp _ a0 a1) = S.union (getArithVars a0) 
-                               (getArithVars a1)
+getBoolVars (BoolOp _ b0 b1) = S.union (getBoolVars b0) 
+                               (getBoolVars b1)
 getBoolVars (RelOp _ a0 a1) = S.union (getArithVars a0) 
                               (getArithVars a1)
 getBoolVars _ = S.empty
