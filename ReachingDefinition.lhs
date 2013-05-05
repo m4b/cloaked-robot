@@ -1,6 +1,6 @@
 \begin{code}
 {-# LANGUAGE ViewPatterns #-}
-module ReachingDefinition(formatEquations, ReachingDefinitions, reachingDefinitions) where
+module ReachingDefinition(formatEquations, ReachingDefinitions, reachingDefinitions, formatReachingDefinitions) where
 
 import AST
 import ControlFlow
