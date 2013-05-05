@@ -1,6 +1,5 @@
 \begin{code}
-{-# LANGUAGE TupleSections,
-             ViewPatterns #-}
+{-# LANGUAGE TupleSections #-}
 module ControlFlow where
 
 import AST
@@ -72,29 +71,25 @@ cfg = CFG (decorate ast) out ins where
 cfg2 :: ControlFlowGraph
 cfg2 = CFG (decorate ast2) out ins where
   ins = M.fromList [(0,S.empty),(1,set 0),(2,flist [1,4,5]),
-         (3,set 2),(4,set 3),(5,set 3)]
+         (3,set 2),(4,set 3),(5,set 3),(6,set 2)]
   out = M.fromList [(0,set 1),(1,set 2),(2,flist [3,6]),
-          (3,flist [4,5]),(4,set 2),(5,set 2)]
+          (3,flist [4,5]),(4,set 2),(5,set 2),(6,S.empty)]
   set = S.singleton
   flist = S.fromList
   
 
 controlFlowGraph :: Statement -> ControlFlowGraph
 controlFlowGraph g = init where
-  init = CFG dec (snd $ computeSuccessors 0 1 dec g) M.empty
+  init = CFG dec outs ins
   dec = decorate g
+  outs = snd $ computeSuccessors 0 1 dec g
+  ins = computePredecessors outs
 
-computeSuccessors :: Int -> Int -> M.Map Int Block -> Statement -> (Int,M.Map Int (S.Set Int))
-computeSuccessors i n dec (Assign s a) = (i,M.singleton i set) where
-  set = case M.lookup n dec of
-    Nothing -> S.empty
-    _ -> S.singleton n
-
-computeSuccessors i n dec Skip = (i,M.singleton i set) where
-  set = case M.lookup n dec of
-    Nothing -> S.empty
-    _ -> S.singleton n
-    
+computeSuccessors :: Int 
+                  -> Int 
+                  -> M.Map Int Block 
+                  -> Statement 
+                  -> (Int,M.Map Int (S.Set Int))   
 computeSuccessors i n dec (Seq s1 s2) = (n2,M.union m1 m2) where
   (n1,m1) = computeSuccessors i n dec s1
   (n2,m2) = computeSuccessors (n1+1) (n1+2) dec s2
@@ -110,92 +105,15 @@ computeSuccessors i n dec (While _ s) = (n1,M.union m m1)where
     Nothing -> S.singleton n  
     _ -> S.fromList [i+1,n1+1]
   (n1,m1) = computeSuccessors n i dec s
-
-{--
-{-
-p,c,n
-ins = p
-outs = n
-c,n,n+1
--}
-computeGraph :: (Int,Int,Int) -> Statement -> State ControlFlowGraph (Int,Int,Int)
-computeGraph (p,c,n) (Assign _ _) = do
-  g <- get
-  let ins = inEdges g
-      outs = outEdges g
-      ins' = case M.lookup p outs of
-        Nothing -> S.empty
-        Just _ -> S.singleton p
-      outs' = case M.lookup n (labels g) of
-        Nothing -> S.empty
-        Just _ -> S.singleton n
-  put g{inEdges = M.insert c ins' ins,outEdges = M.insert c outs' outs}
-  return (c,n,n+1)
-
-{-
-p,c,n
-ins = p
-outs = n
-c,n,n+1
--}
-computeGraph (p,c,n) Skip = do
-  g <- get
-  let ins = inEdges g
-      outs = outEdges g
-      ins' = case M.lookup p outs of
-        Nothing -> S.empty
-        Just _ -> S.singleton p
-      outs' = case M.lookup n (labels g) of
-        Nothing -> S.empty
-        Just _ -> S.singleton n
-  put g{inEdges = M.insert c ins' ins,outEdges = M.insert c outs' outs}
-  return (c,n,n+1)
-
-computeGraph pos (Seq s1 s2) = do
-  pos' <- computeGraph pos s1
-  computeGraph pos' s2
   
-{-2,3,2
-p,c,n
-ins = p
-outs = n,n+1
-s1 = c,n,n+2
-s1 -> 
-s2 = c,n+1,n+2
--}
-computeGraph (p,c,n) (If _ s1 s2) = do
-  g <- get
-  let ins = inEdges g
-      outs = outEdges g
-      ins' = case M.lookup p outs of
-        Nothing -> S.empty
-        Just _ -> S.singleton p
-      outs' = case M.lookup n (labels g) of
-        Nothing -> S.empty
-        Just _ -> S.fromList [n,n+1]
-  put g{inEdges = M.insert c ins' ins,outEdges = M.insert c outs' outs}
-  (p2,c2,n2) <- computeGraph (c,n,n+2) s1
-  computeGraph (c,n+1,n+2) s2
-  
-
-computeGraph (p,c,n) (While _ s) = do
-  g <- get
-  let ins = inEdges g
-      outs = outEdges g
-      ins' = case M.lookup p outs of
-        Nothing -> S.empty
-        Just _ -> S.singleton p
-      outs' = case M.lookup n (labels g) of
-        Nothing -> S.empty
-        Just _ -> S.singleton n
-  put g{inEdges = M.insert c ins' ins,outEdges = M.insert c outs' outs}
-  (x,y,z) <- computeGraph (c,n,c) s
-  g' <- get
-  let insa = inEdges g'
-      outa = outEdges g'
-  let t@(p',c',n') = (y,z+1,z+2)
-  put g'{inEdges = M.insert c (S.insert n ins') insa,
-        outEdges = M.insert c (S.insert c' outs') outa}
-  return t
---}
+computeSuccessors i n dec _ = (i,M.singleton i set) where
+  set = case M.lookup n dec of
+    Nothing -> S.empty
+    _ -> S.singleton n
+    
+computePredecessors :: M.Map Int (S.Set Int)
+                    -> M.Map Int (S.Set Int)
+computePredecessors outs = M.fromList . map go . M.keys $ outs where
+  go i = (i,labelsWith i)
+  labelsWith i = S.fromList [j | (j,set) <- M.toList outs, S.member i set]
 \end{code}
