@@ -59,7 +59,7 @@ main = do
      [file] <- getArgs
      contents <- readFile file
      case sparse contents of
-          Right ast -> print ast
+          Right ast -> putStrLn . dotPrinter $ ast
           Left err -> print err
 
 \end{code}

@@ -101,16 +101,53 @@ Lastly, We also wrote a printer that outputs dot syntax for drawing pretty graph
 \begin{code}
 
 dotPrinter' :: (Num t, Show t) => Statement -> t -> ([Char], t)
-dotPrinter' (Assign s a) counter = 
-   let (arith,counter') = dotPrinterArith a counter
-       s1 = "s_" ++ (show counter')
-       s2 = "s_" ++ (show (counter'+1))
+dotPrinter' (While b s1) counter = 
+   let whilelabel = "s_" ++ (show counter)
+       (boolean,counter') = dotPrinterBool b (counter+1)
+       (statement1,counter'') = dotPrinter' s1 (counter')
+       string = ( whilelabel ++ " [label=\"while\"];\n" ++
+                whilelabel ++ " -> " ++ "b_" ++ (show (counter+1))
+                 ++ ";\n" ++  
+                whilelabel ++ " -> " ++ "s_" ++ (show (counter'))
+                 ++ ";\n" ++
+                boolean ++ statement1) in
+   (string,(counter''))
+dotPrinter' (If b s1 s2) counter = 
+   let iflabel = "s_" ++ (show counter)
+       (boolean,counter') = dotPrinterBool b (counter+1)
+       (statement1,counter'') = dotPrinter' s1 (counter')
+       (statement2,counter''') = dotPrinter' s2 (counter'')
+       string = ( iflabel ++ " [label=\"if\"];\n" ++
+                  iflabel ++ " -> " ++ "b_" ++ (show (counter+1)) ++ ";\n" ++  
+                  iflabel ++ " -> " ++ "s_" ++ (show (counter')) ++ ";\n" ++
+                  iflabel ++ " -> " ++ "s_" ++ (show (counter'')) ++ ";\n" ++
+                  boolean ++ statement1 ++ statement2 ) in
+   (string,(counter'''))
+dotPrinter' (Seq s1 s2) counter = 
+   let seq = "s_" ++ (show counter)
+       (statement1,counter') = dotPrinter' s1 (counter+1)
+       (statement2,counter'') = dotPrinter' s2 (counter')
+       string = ( seq ++ " [label=\";\"];\n" ++
+                  seq ++ " -> " ++ "s_" ++ (show (counter+1)) ++ ";\n" ++  
+                  seq ++ " -> " ++ "s_" ++ (show (counter')) ++ ";\n" ++
+                  statement1 ++ statement2 ) in
+   (string,(counter''))
+dotPrinter' (Skip) counter = 
+   let s1 = "s_" ++ (show counter)
+       string = ( s1 ++ " [label=\"skip\"];\n" ) in
+   (string,(counter+1))
+dotPrinter' (Assign name a) counter =          
+   let s1 = "s_" ++ (show counter)
+       s2 = "s_" ++ (show (counter+1))
+       s3 = "s_" ++ (show (counter+2))
+       (arith,counter') = dotPrinterArith a (counter+3)
        string = ( s1 ++ " [label=\":=\"];\n" ++ 
-                  s2 ++ " [label=\"" ++ s ++ "\"];\n" ++
-                  s1 ++ " -> " ++ s2 ++ ";\n" ++  
-                  s1 ++ " -> " ++ "a_" ++ (show counter') ++ ";\n" ++
-                  arith ++ ";\n") in
-    (string,counter'+2)
+                  s2 ++ " [label=\"variable\"];\n" ++
+                  s3 ++ " [label=\"" ++ name ++ "\"];\n" ++
+                  s1 ++ " -> " ++ s2 ++ " -> " ++ s3 ++ ";\n" ++  
+                  s1 ++ " -> " ++ "a_" ++ (show (counter+3)) ++ ";\n" ++
+                  arith) in
+    (string,counter')
 
 dotPrinterArith :: (Num t, Show t) => Arith -> t -> ([Char], t)
 dotPrinterArith (Var s) counter = 
@@ -130,15 +167,53 @@ dotPrinterArith (Number i) counter =
                  ) in
    (string,(counter+2))
 dotPrinterArith (BinOp aop a1 a2) counter =
-   let (s1,counter') = dotPrinterArith a1 counter
+   let op = "a_" ++ (show counter)
+       (s1,counter') = dotPrinterArith a1 (counter+1)
        (s2,counter'') = dotPrinterArith a2 counter'
-       op = "a_" ++ (show (counter'' +1))
        string = ( op ++ " [label=\"" ++ (dotAOP aop) ++ "\"];\n" ++
-                  s1 ++ s2 ++
-                  op ++ " -> " ++ "a_" ++ (show counter) ++ ";\n" ++
-                  op ++ " -> " ++ "a_" ++ (show counter')
+                  op ++ " -> " ++ "a_" ++ (show (counter+1)) ++ ";\n" ++
+                  op ++ " -> " ++ "a_" ++ (show counter') ++ ";\n" ++
+                  s1 ++ s2
                  ) in
-   (string,(counter''+1))
+   (string,(counter''))
+
+dotPrinterBool :: (Num t, Show t) => Boolean -> t -> ([Char], t)
+dotPrinterBool (T) counter = 
+   let b1 = "b_" ++ (show counter)
+       string = ( b1 ++ " [label=\"⊤\"];\n" ) in
+   (string,(counter+1))
+dotPrinterBool (F) counter = 
+   let b1 = "b_" ++ (show counter)
+       string = ( b1 ++ " [label=\"⊥\"];\n" ) in
+   (string,(counter+1))
+dotPrinterBool (Not b) counter =
+   let b1 = "b_" ++ (show counter)
+       (s1,counter') = dotPrinterBool b (counter+1)
+       string = ( b1 ++ " [label=\"not\"];\n" ++
+                  b1 ++ " -> " ++ (show (counter +1)) ++ ";\n" ++
+                  s1
+                 ) in
+   (string,counter')
+dotPrinterBool (BoolOp bop b1 b2) counter =
+   let op = "b_" ++ (show counter)
+       (s1,counter') = dotPrinterBool b1 (counter+1)
+       (s2,counter'') = dotPrinterBool b2 counter'
+       string = ( op ++ " [label=\"" ++ (dotBOP bop) ++ "\"];\n" ++
+                  op ++ " -> " ++ "b_" ++ (show (counter+1)) ++ ";\n" ++
+                  op ++ " -> " ++ "b_" ++ (show counter') ++ ";\n" ++
+                  s1 ++ s2
+                 ) in
+   (string,(counter''))
+dotPrinterBool (RelOp rel a1 a2) counter =
+   let op = "b_" ++ (show counter)
+       (s1,counter') = dotPrinterArith a1 (counter+1)
+       (s2,counter'') = dotPrinterArith a2 counter'
+       string = ( op ++ " [label=\"" ++ (dotREL rel) ++ "\"];\n" ++
+                  op ++ " -> " ++ "a_" ++ (show (counter+1)) ++ ";\n" ++
+                  op ++ " -> " ++ "a_" ++ (show counter') ++ ";\n" ++
+                  s1 ++ s2
+                 ) in
+   (string,(counter''))
 
 dotAOP :: AOP -> [Char]
 dotAOP (Plus)   = "+"
@@ -160,8 +235,8 @@ dotPrinter x =
 
 main' = do
  putStrLn $ dotPrinter (Assign "x" (BinOp Plus ((BinOp Times (Var "y") (Number 3))) (Number 3)))
+ putStrLn $ fst (dotPrinterBool (BoolOp And (RelOp Less (Number 3) (Number 4)) F) 0)
       
-                
 
 
 \end{code}

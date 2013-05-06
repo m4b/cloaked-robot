@@ -58,8 +58,9 @@ factor =
       spaces
       return n
 
-addop  = do {char '+'; spaces; return (BinOp Plus)} 
-       <|> do {char '-'; spaces ;return (BinOp Minus)}
+addop  = do {char '+'; spaces; return (BinOp Plus)} <|> 
+         do {char '-'; spaces ;return (BinOp Minus)}
+
 mulop  = do {char '*'; spaces; return (BinOp Times)}
 
 arithmetic = do
@@ -139,7 +140,6 @@ whilestatement = do
   s <- statement
   string "od"
   return $ While b s
-                 
 
 sparse = parse statement "(syntax error)"
 
