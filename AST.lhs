@@ -2,6 +2,19 @@
 
 In this module we define the abstract syntax (AST) for statements written in a simple imperative language.
 
+Its Backus-Naur form is as follows:
+
+\begin{equation*}
+\begin{aligned}
+\text{Arithmetic expression } a\ &::=\ x\ \vert \ n\ \vert \ a_1\ o_a\ a_2\\
+\text{Boolean expression } b\ &::=\ true \vert \ false\ \vert \ not\ b\ \vert \ b_1\ o_b\ b_2\ \vert \ a_1 \ o_r \ a_2\\
+\text{Statement } S\ &::=\ x\ :=\ a\ \vert \ skip\ \vert \ S_1;S_2\ \vert \ \\
+                &if\ b\ then\ S_1\ else \ S_2\ fi\ \vert \ while\ b \ do\ S\ od\ 
+\end{aligned}
+\end{equation*}
+
+The Haskell code will more or less precisely mirror the mathematical definition just given.
+
 \begin{code}
 
 module AST where
@@ -46,9 +59,7 @@ data Statement =
 
 \end{code}
 
-As can be seen, the abstract syntax, thanks to Haskell's recursive data types, almost exactly mirrors the Backus-Naur form given in the assignment.
-
-In addition, we wrote a pretty printer for ASTs, as follows:
+In addition, for bug testing, and for nice output, we wrote a pretty printer for ASTs, as follows:
 
 \begin{code}
 
@@ -96,7 +107,52 @@ pettyShowStatement (While b s) = "while " ++ pettyShowBool b ++ ['\n']
 
 \end{code}
 
-Lastly, We also wrote a printer that outputs dot syntax for drawing pretty graphs for the abstract syntax of a program.
+Lastly, as previously mentioned, we also wrote a printer that outputs dot syntax for drawing pretty graphs for the abstract syntax of a program.  For example, the output for the example program in \S\ref{intro} is as follows:
+
+\begin{verbatim}
+digraph graphname{
+s_0 [label=";"];
+s_0 -> s_1;
+s_0 -> s_9;
+s_1 [label=":="];
+s_2 [label="variable"];
+s_3 [label="x"];
+s_1 -> s_2 -> s_3;
+s_1 -> a_4;
+a_4 [label="*"];
+a_4 -> a_5;
+a_4 -> a_7;
+a_5 [label="number"];
+a_6 [label="2"];
+a_5 -> a_6;
+a_7 [label="number"];
+a_8 [label="200"];
+a_7 -> a_8;
+s_9 [label="if"];
+s_9 -> b_10;
+s_9 -> s_15;
+s_9 -> s_16;
+b_10 [label="<="];
+b_10 -> a_11;
+b_10 -> a_13;
+a_11 [label="variable"];
+a_12 [label="x"];
+a_11 -> a_12;
+a_13 [label="number"];
+a_14 [label="400"];
+a_13 -> a_14;
+s_15 [label="skip"];
+s_16 [label=":="];
+s_17 [label="variable"];
+s_18 [label="y"];
+s_16 -> s_17 -> s_18;
+s_16 -> a_19;
+a_19 [label="number"];
+a_20 [label="10"];
+a_19 -> a_20;
+}
+\end{verbatim}
+
 
 \begin{code}
 
@@ -118,9 +174,12 @@ dotPrinter' (If b s1 s2) counter =
        (statement1,counter'') = dotPrinter' s1 (counter')
        (statement2,counter''') = dotPrinter' s2 (counter'')
        string = ( iflabel ++ " [label=\"if\"];\n" ++
-                  iflabel ++ " -> " ++ "b_" ++ (show (counter+1)) ++ ";\n" ++  
-                  iflabel ++ " -> " ++ "s_" ++ (show (counter')) ++ ";\n" ++
-                  iflabel ++ " -> " ++ "s_" ++ (show (counter'')) ++ ";\n" ++
+                  iflabel ++ " -> " ++ "b_" ++ (show (counter+1))
+                   ++ ";\n" ++  
+                  iflabel ++ " -> " ++ "s_" ++ (show (counter'))
+                   ++ ";\n" ++
+                  iflabel ++ " -> " ++ "s_" ++ (show (counter''))
+                   ++ ";\n" ++
                   boolean ++ statement1 ++ statement2 ) in
    (string,(counter'''))
 dotPrinter' (Seq s1 s2) counter = 
@@ -128,8 +187,10 @@ dotPrinter' (Seq s1 s2) counter =
        (statement1,counter') = dotPrinter' s1 (counter+1)
        (statement2,counter'') = dotPrinter' s2 (counter')
        string = ( seq ++ " [label=\";\"];\n" ++
-                  seq ++ " -> " ++ "s_" ++ (show (counter+1)) ++ ";\n" ++  
-                  seq ++ " -> " ++ "s_" ++ (show (counter')) ++ ";\n" ++
+                  seq ++ " -> " ++ "s_" ++ (show (counter+1))
+                   ++ ";\n" ++
+                  seq ++ " -> " ++ "s_" ++ (show (counter'))
+                   ++ ";\n" ++
                   statement1 ++ statement2 ) in
    (string,(counter''))
 dotPrinter' (Skip) counter = 
@@ -145,8 +206,8 @@ dotPrinter' (Assign name a) counter =
                   s2 ++ " [label=\"variable\"];\n" ++
                   s3 ++ " [label=\"" ++ name ++ "\"];\n" ++
                   s1 ++ " -> " ++ s2 ++ " -> " ++ s3 ++ ";\n" ++  
-                  s1 ++ " -> " ++ "a_" ++ (show (counter+3)) ++ ";\n" ++
-                  arith) in
+                  s1 ++ " -> " ++ "a_" ++ (show (counter+3))
+                   ++ ";\n" ++ arith) in
     (string,counter')
 
 dotPrinterArith :: (Num t, Show t) => Arith -> t -> ([Char], t)
@@ -170,9 +231,12 @@ dotPrinterArith (BinOp aop a1 a2) counter =
    let op = "a_" ++ (show counter)
        (s1,counter') = dotPrinterArith a1 (counter+1)
        (s2,counter'') = dotPrinterArith a2 counter'
-       string = ( op ++ " [label=\"" ++ (dotAOP aop) ++ "\"];\n" ++
-                  op ++ " -> " ++ "a_" ++ (show (counter+1)) ++ ";\n" ++
-                  op ++ " -> " ++ "a_" ++ (show counter') ++ ";\n" ++
+       string = ( op ++ " [label=\"" ++ (dotAOP aop)
+                  ++ "\"];\n" ++
+                  op ++ " -> " ++ "a_" ++ (show (counter+1))
+                   ++ ";\n" ++
+                  op ++ " -> " ++ "a_" ++ (show counter')
+                   ++ ";\n" ++
                   s1 ++ s2
                  ) in
    (string,(counter''))
@@ -232,12 +296,6 @@ dotREL (Geq)     = "≥"
 dotPrinter :: Statement -> [Char]
 dotPrinter x = 
    ("digraph graphname{\n" ++ (fst (dotPrinter' x 0)) ++ "}")
-
-main' = do
- putStrLn $ dotPrinter (Assign "x" (BinOp Plus ((BinOp Times (Var "y") (Number 3))) (Number 3)))
- putStrLn $ fst (dotPrinterBool (BoolOp And (RelOp Less (Number 3) (Number 4)) F) 0)
-      
-
 
 \end{code}
 
