@@ -63,12 +63,9 @@ yields the following AST:
 \includegraphics[width=1.0\textwidth]{tests/ifexample.png}
 \end{center}
 
-Our implementation is divided up into several sections, roughly corresponding to the problems given in the specification, and each its own Haskell module.
+Our implementation is divided up into several sections, roughly corresponding to the problems given in the specification, and each its own Haskell module.  Each group member was more or less given a module to work on, but there was coding across modules happening on occasion.
 
-We spent approximately 40 man hours on the project.  This was slightly shorter than the previous assignments, but we feel that over the course of the semester, our ability to code together as a team has substantially improved.
-
-In addition, since we were coding in Haskell, tasks like parsing, printing, and the even some of the algorithms have become familiar to us, and thus allowed us a faster development time.
-
+We spent approximately 50 man hours on the project.  We feel that over the course of the semester, our ability to code together as a team substantially improved, and we were able to work together in an efficient and robust manner.
 
 %include AST.lhs
 %include Input.lhs

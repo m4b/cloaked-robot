@@ -19,10 +19,10 @@ import qualified Data.Set as S
 
 \end{code}
 
- A ReachingDefinition is a set of String variable names to
- Maybe Int where Just l is the last known label assignment and
- Nothing indicates that it is unknown when the element was last
- assigned.
+ A |ReachingDefinition| is a set of |String| variable names to
+|Maybe Int| where |Just l| is the last known label assignment and
+|Nothing| indicates that it is unknown when the element was last
+assigned.
 
 \begin{code}
 
@@ -31,8 +31,8 @@ type ReachingDefinition = S.Set (String, Maybe Int)
 \end{code}
 
 
- A ReachingDefinitions contains two maps from Int to ReachingDefinitions.
- The Int key is the label and the ReachingDefinition is the definition
+ A |ReachingDefinitions| contains two maps from |Int| to |ReachingDefinitions|.
+ The |Int| key is the label and the |ReachingDefinition| is the definition
  associated with that label.
 
 \begin{code}
@@ -50,10 +50,10 @@ type EntryEquation = (Int, S.Set Int)
 
 \end{code}
 
- Given a ControlFlowGraph, recahingDefinitions returns the 
-ReachingDefinitions for the provided ControlFlowGraph. It 
+ Given a |ControlFlowGraph|, |reachingDefinitions| returns the 
+|ReachingDefinitions| for the provided |ControlFlowGraph|. It 
 is assumed that for each key in labels, there is also a key 
-in outEdges and inEdges. If this condition is not met, it is 
+in |outEdges| and |inEdges|. If this condition is not met, it is 
 unknown what the result of this function will be.
 
 \begin{code}
@@ -67,9 +67,9 @@ reachingDefinitions cfg = RDS entries exits where
 
 \end{code}
 
-Given a ControlFlowGraph, formatEquations returns a human
-readable String showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), 
-equations for each label in the ControlFlowGraph. For example given the following simple graph:
+Given a |ControlFlowGraph|, |formatEquations| returns a human
+readable |String| showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), 
+equations for each label in the |ControlFlowGraph|. For example given the following simple graph:
 
 \begin{verbatim}
  simpleGraph:
@@ -123,10 +123,10 @@ formatEquations cfg = entries ++ "\n" ++ exits where
   
 \end{code}
 
- Given the ReachingDefinitions of a ControlFlowGraph, 
- formatReachingDefinitions returns a human readable String 
- showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), ReachingDefinition 
- for each label. For example:\\
+  Given the |ReachingDefinitions| of a |ControlFlowGraph|, 
+|formatReachingDefinitions| returns a human readable |String| 
+showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), |ReachingDefinition| 
+for each label. For example:\\
 
 \begin{center}
  |putStrLn . formatReachingDefinitions . reachingDefinitions $ simpleGraph|
