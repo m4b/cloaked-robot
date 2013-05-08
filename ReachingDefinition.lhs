@@ -1,3 +1,7 @@
+\section{Reaching Definitions}
+
+In this section we compute the reaching definitions for a given AST and its control flow graph.
+
 \begin{code}
 {-# LANGUAGE ViewPatterns #-}
 module ReachingDefinition(formatEquations, 
