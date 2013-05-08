@@ -293,9 +293,11 @@ dotREL (Leq)     = "≤"
 dotREL (Greater) = ">"
 dotREL (Geq)     = "≥"
 
-dotPrinter :: Statement -> [Char]
+dotPrinter :: Statement -> String
 dotPrinter x = 
    ("digraph graphname{\n" ++ (fst (dotPrinter' x 0)) ++ "}")
+
+dotPrint = putStrLn . dotPrinter
 
 \end{code}
 

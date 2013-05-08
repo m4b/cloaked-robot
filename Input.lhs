@@ -92,8 +92,8 @@ orParser = do
         return $ (\ x -> BoolOp Or x b2)
 
 relation = 
-         do {string ">=" <|> string "≥"; return $ RelOp Geq} <|>
-         do {string "<=" <|> string "≤"; return $ RelOp Leq} <|>
+         do {try (string ">=" <|> string "≥"); return $ RelOp Geq} <|>
+         do {try (string "<=" <|> string "≤"); return $ RelOp Leq} <|>
          do {string ">"; return $ RelOp Greater} <|>
          do {string "<"; return $ RelOp Less} <|>
          do {string "=="; return $ RelOp Equal}

@@ -120,4 +120,13 @@ computePredecessors :: M.Map Int (S.Set Int)
 computePredecessors outs = M.fromList . map go . M.keys $ outs where
   go i = (i,labelsWith i)
   labelsWith i = S.fromList [j | (j,set) <- M.toList outs, S.member i set]
+
+\end{code}
+
+The dot printer for control flow graphs is as follows:
+
+\begin{code}
+
+
+
 \end{code}

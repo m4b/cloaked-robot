@@ -2,6 +2,19 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{latexsym}
+\usepackage{fontspec}
+
+% \setmainfont[Ligatures=TeX]{DejaVu Sans Mono}
+\setmainfont[Ligatures=TeX]{Linux Libertine O}
+\newfontfamily\mathfont{Asana Math}
+\newfontfamily\fallbackfont{DejaVu Sans Mono}
+\usepackage{newunicodechar}
+
+\newunicodechar{∖}{\mathfont ∖}
+\newunicodechar{●}{\mathfont ●}
+\newunicodechar{○}{\mathfont ○}
+\newunicodechar{∪}{\mathfont ∪}
+
 
 %include polycode.fmt
 
@@ -79,9 +92,13 @@ import ReachingDefinition
 main = do 
      [file] <- getArgs
      contents <- readFile file
-     case sparse contents of
-          Right ast -> putStrLn . dotPrinter $ ast
+     let result = sparse contents
+     case result of
+          Right ast -> do
+                writeFile "ast.gv" (dotPrinter ast)
+                print $ controlFlowGraph ast
           Left err -> print err
+     
 
 \end{code}
 

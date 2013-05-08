@@ -17,15 +17,25 @@ import Data.List(intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
--- A ReachingDefinition is a set of String variable names to
--- Maybe Int where Just l is the last known label assignment and
--- Nothing indicates that it is unknown when the element was last
--- assigned.
+\end{code}
+
+ A ReachingDefinition is a set of String variable names to
+ Maybe Int where Just l is the last known label assignment and
+ Nothing indicates that it is unknown when the element was last
+ assigned.
+
+\begin{code}
+
 type ReachingDefinition = S.Set (String, Maybe Int)
 
--- A ReachingDefinitions contains two maps from Int to ReachingDefinitions.
--- The Int key is the label and the ReachingDefinition is the definition
--- associated with that label.
+\end{code}
+
+
+ A ReachingDefinitions contains two maps from Int to ReachingDefinitions.
+ The Int key is the label and the ReachingDefinition is the definition
+ associated with that label.
+
+\begin{code}
 data ReachingDefinitions = RDS {entry :: M.Map Int ReachingDefinition,
                                 exit  :: M.Map Int ReachingDefinition}
 
@@ -38,11 +48,16 @@ type ExitEquation = (Int, KillSet, GenSet)
 
 type EntryEquation = (Int, S.Set Int)
 
--- Given a ControlFlowGraph, recahingDefinitions returns the 
--- ReachingDefinitions for the provided ControlFlowGraph. It 
--- is assumed that for each key in labels, there is also a key 
--- in outEdges and inEdges. If this condition is not met, it is 
--- unknown what the result of this function will be.
+\end{code}
+
+ Given a ControlFlowGraph, recahingDefinitions returns the 
+ReachingDefinitions for the provided ControlFlowGraph. It 
+is assumed that for each key in labels, there is also a key 
+in outEdges and inEdges. If this condition is not met, it is 
+unknown what the result of this function will be.
+
+\begin{code}
+
 reachingDefinitions :: ControlFlowGraph -> ReachingDefinitions
 reachingDefinitions cfg = RDS entries exits where
   (entries, exits) = reachingDefinitions' (empties, empties) cfg
@@ -50,27 +65,55 @@ reachingDefinitions cfg = RDS entries exits where
   lbls = M.keys . labels $ cfg
 
 
--- Given a ControlFlowGraph, formatEquations returns a human
--- readable String showing the entry, RD○(x), and exit, RD●(x), 
--- equations for each label in the ControlFlowGraph. For example,
--- > putStrLn . formatEquations $ simpleGraph
--- RD○(0) = {(a, ?), (b, ?), (x, ?), (y, ?)} ∪ {}
--- RD○(1) = RD●(0)
--- RD○(2) = RD●(1) ∪ RD●(4)
--- RD○(3) = RD●(2)
--- RD○(4) = RD●(3)
--- RD○(5) = RD●(2)
--- RD●(0) = RD○(0) ∖ {(x, ?), (x, 0), (x, 1), (x, 2), 
---                    (x, 3), (x, 4), (x, 5)} ∪ {(x, 0)}
--- RD●(1) = RD○(1) ∖ {(y, ?), (y, 0), (y, 1), 
---                    (y, 2), (y, 3), (y, 4), (y, 5)} ∪ {(y, 1)}
--- RD●(2) = RD○(2) ∖ {} ∪ {}
--- RD●(3) = RD○(3) ∖ {(x, ?), (x, 0), (x, 1), 
---                    (x, 2), (x, 3), (x, 4), (x, 5)} ∪ {(x, 3)}
--- RD●(4) = RD○(4) ∖ {(a, ?), (a, 0), (a, 1), 
---                    (a, 2), (a, 3), (a, 4), (a, 5)} ∪ {(a, 4)}
--- RD●(5) = RD○(5) ∖ {(b, ?), (b, 0), (b, 1), 
---                    (b, 2), (b, 3), (b, 4), (b, 5)} ∪ {(b, 5)}
+\end{code}
+
+Given a ControlFlowGraph, formatEquations returns a human
+readable String showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), 
+equations for each label in the ControlFlowGraph. For example given the following simple graph:
+
+\begin{verbatim}
+ simpleGraph:
+ 0: [x := 0]
+ 1: [y := 1]
+ while 2: [x < a + b] do
+   3: [x := x + a]
+   4: [a := a - b]
+ od
+ 5: [b := b + x]
+\end{verbatim}
+
+the command:
+
+ \begin{center}
+ |putStrLn . formatEquations $ simpleGraph|
+ \end{center}
+
+yields:
+
+\begin{equation*}
+\begin{aligned}
+ RD○(0) &= \{(a, ?), (b, ?), (x, ?), (y, ?)\} ∪ \{\} \\
+ RD○(1) &= RD●(0) \\
+ RD○(2) &= RD●(1) ∪ RD●(4) \\
+ RD○(3) &= RD●(2) \\
+ RD○(4) &= RD●(3) \\
+ RD○(5) &= RD●(2) \\
+ RD●(0) &= RD○(0) ∖ \{(x, ?), (x, 0), (x, 1), (x, 2), \\
+                    &(x, 3), (x, 4), (x, 5)\} ∪ \{(x, 0)\} \\
+ RD●(1) &= RD○(1) ∖ \{(y, ?), (y, 0), (y, 1), \\
+                    &(y, 2), (y, 3), (y, 4), (y, 5)\} ∪ \{(y, 1)\} \\
+ RD●(2) &= RD○(2) ∖ \{\} ∪ \{\} \\
+ RD●(3) &= RD○(3) ∖ \{(x, ?), (x, 0), (x, 1), \\
+                    &(x, 2), (x, 3), (x, 4), (x, 5)\} ∪ \{(x, 3)\} \\
+ RD●(4) &= RD○(4) ∖ \{(a, ?), (a, 0), (a, 1), \\
+                    &(a, 2), (a, 3), (a, 4), (a, 5)\} ∪ \{(a, 4)\} \\
+ RD●(5) &= RD○(5) ∖ \{(b, ?), (b, 0), (b, 1), \\
+                    &(b, 2), (b, 3), (b, 4), (b, 5)\} ∪ \{(b, 5)\}
+\end{aligned}
+\end{equation*}
+
+\begin{code}
+
 formatEquations :: ControlFlowGraph -> String
 formatEquations cfg = entries ++ "\n" ++ exits where
   entries = intercalate "\n" . map (formatEntryE vars) . 
@@ -78,36 +121,41 @@ formatEquations cfg = entries ++ "\n" ++ exits where
   exits = intercalate "\n" . map formatExitE . exitEquations $ cfg
   vars = determineVars cfg
   
--- Given the ReachingDefinitions of a ControlFlowGraph, 
--- formatReachingDefinitions returns a human readable String 
--- showing the entry, RD○(x), and exit, RD●(x), ReachingDefinition 
--- for each label. For example,
--- > putStrLn . formatReachingDefinitions . 
---       reachingDefinitions $ simpleGraph
--- RD○(0) = {(a, ?),(b, ?),(x, ?),(y, ?)}
--- RD○(1) = {(a, ?),(b, ?),(x, 0),(y, ?)}
--- RD○(2) = {(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)}
--- RD○(3) = {(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)}
--- RD○(4) = {(a, ?),(a, 4),(b, ?),(x, 3),(y, 1)}
--- RD○(5) = {(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)}
--- RD●(0) = {(a, ?),(b, ?),(x, 0),(y, ?)}
--- RD●(1) = {(a, ?),(b, ?),(x, 0),(y, 1)}
--- RD●(2) = {(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)}
--- RD●(3) = {(a, ?),(a, 4),(b, ?),(x, 3),(y, 1)}
--- RD●(4) = {(a, 4),(b, ?),(x, 3),(y, 1)}
--- RD●(5) = {(a, ?),(a, 4),(b, 5),(x, 0),(x, 3),(y, 1)}
+\end{code}
+
+ Given the ReachingDefinitions of a ControlFlowGraph, 
+ formatReachingDefinitions returns a human readable String 
+ showing the entry, \(RD○(x)\), and exit, \(RD●(x)\), ReachingDefinition 
+ for each label. For example:\\
+
+\begin{center}
+ |putStrLn . formatReachingDefinitions . reachingDefinitions $ simpleGraph|
+\end{center}
+
+gives:
+
+\begin{equation*}
+\begin{aligned}
+ RD○(0) &= \{(a, ?),(b, ?),(x, ?),(y, ?)\} \\
+ RD○(1) &= \{(a, ?),(b, ?),(x, 0),(y, ?)\} \\
+ RD○(2) &= \{(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)\} \\
+ RD○(3) &= \{(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)\} \\
+ RD○(4) &= \{(a, ?),(a, 4),(b, ?),(x, 3),(y, 1)\} \\
+ RD○(5) &= \{(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)\} \\
+ RD●(0) &= \{(a, ?),(b, ?),(x, 0),(y, ?)\} \\
+ RD●(1) &= \{(a, ?),(b, ?),(x, 0),(y, 1)\} \\
+ RD●(2) &= \{(a, ?),(a, 4),(b, ?),(x, 0),(x, 3),(y, 1)\} \\
+ RD●(3) &= \{(a, ?),(a, 4),(b, ?),(x, 3),(y, 1)\} \\
+ RD●(4) &= \{(a, 4),(b, ?),(x, 3),(y, 1)\} \\
+ RD●(5) &= \{(a, ?),(a, 4),(b, 5),(x, 0),(x, 3),(y, 1)\}
+\end{aligned}
+\end{equation*}
+
+\begin{code}
 formatReachingDefinitions :: ReachingDefinitions -> String
 formatReachingDefinitions (RDS entries exits) = 
   (formatEntryDefs entries) ++ "\n" ++ (formatExitDefs exits)
 
--- simpleGraph:
--- 0: [x := 0]
--- 1: [y := 1]
--- while 2: [x < a + b] do
---   3: [x := x + a]
---   4: [a := a - b]
--- od
--- 5: [b := b + x]
 simpleGraph :: ControlFlowGraph
 simpleGraph = CFG labels outEdges inEdges where
   labels = M.fromList [(0, Left (Assign "x" (Number 0))),

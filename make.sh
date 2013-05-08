@@ -1,1 +1,1 @@
-lhs2TeX Main.lhs > project3.tex && pdflatex project3.tex
+lhs2TeX Main.lhs > project3.tex && xelatex project3.tex
