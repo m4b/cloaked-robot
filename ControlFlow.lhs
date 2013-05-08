@@ -123,10 +123,3 @@ computePredecessors outs = M.fromList . map go . M.keys $ outs where
 
 \end{code}
 
-The dot printer for control flow graphs is as follows:
-
-\begin{code}
-
-
-
-\end{code}

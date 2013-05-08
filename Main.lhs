@@ -96,7 +96,10 @@ main = do
      case result of
           Right ast -> do
                 writeFile "ast.gv" (dotPrinter ast)
-                print $ controlFlowGraph ast
+                let cfg = controlFlowGraph ast
+                print cfg
+                putStrLn . formatReachingDefinitions . 
+                         reachingDefinitions $ cfg
           Left err -> print err
      
 
@@ -123,5 +126,29 @@ After scanning and parsing, our dot printer gives its abstract syntax as:
 \begin{center}
 \includegraphics[width=1.0\textwidth]{tests/dotwhile.png}
 \end{center}
+
+The control flow graph for the above is:
+
+ENTER TEXT BITCHES
+
+And finally, the entry and exit points for reaching definitions is:
+
+\begin{equation*}
+\begin{aligned}
+RD○(0) &= \{(x, ?),(y, ?),(z, ?)\}\\
+RD○(1) &= \{(x, ?),(y, 0),(z, ?)\}\\
+RD○(2) &= \{(x, ?),(y, 0),(z, 1),(z, 3)\}\\
+RD○(3) &= \{(x, ?),(y, 0),(z, 1),(z, 3)\}\\
+RD○(4) &= \{\}\\
+RD○(5) &= \{(x, ?),(y, 0),(z, 1),(z, 3)\}\\
+RD●(0) &= \{(x, ?),(y, 0),(z, ?)\}\\
+RD●(1) &= \{(x, ?),(y, 0),(z, 1)\}\\
+RD●(2) &= \{(x, ?),(y, 0),(z, 1),(z, 3)\}\\
+RD●(3) &= \{(x, ?),(y, 0),(z, 3)\}\\
+RD●(4) &= \{\}\\
+RD●(5) &= \{(x, ?),(y, 5),(z, 1),(z, 3)\}
+\end{aligned}
+\end{equation*}
+
 
 \end{document}
