@@ -3,12 +3,13 @@
 In this section we compute the control flow graph for a given AST.
 
 \begin{code}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TupleSections, ViewPatterns #-}
 module ControlFlow where
 
 import AST
 import Control.Applicative
 import Control.Monad.State
+import Data.List(intercalate)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Input
@@ -27,6 +28,88 @@ A Control Flow Graph is a collection of labeled blocks and edges.
 data ControlFlowGraph = CFG { labels :: M.Map Int Block, 
                               outEdges  :: M.Map Int (S.Set Int),
                               inEdges :: M.Map Int (S.Set Int)} deriving (Show, Eq)
+
+\end{code}
+formatCFGasDot takes a ControlFlowGraph and formats it as a DOT graph string.
+For example:
+
+'formatCFGasDOT simpleGraph' returns
+
+digraph {
+l_0 [label="0: [x := 0]"]
+l_1 [label="1: [y := 1]"]
+l_2 [label="2: [x < a + b]"]
+l_3 [label="3: [x := x + a]"]
+l_4 [label="4: [a := a - 1]"]
+l_5 [label="5: [b := b + x]"]
+l_0 -> l_1
+l_1 -> l_2
+l_2 -> l_3
+l_2 -> l_5
+l_3 -> l_4
+l_4 -> l_2
+
+}
+
+Once compiled:
+dot -Tpng "simpleGraph.dot" > "simpleGraph.png"
+
+Produces the image:
+<INSERT simpleGraph.png HERE!!>
+\begin{code}
+formatCFGasDOT :: ControlFlowGraph -> String
+formatCFGasDOT cfg = "digraph {\n" ++ nodes ++ "\n" ++ edges ++ "\n}" 
+  where
+    nodes = formatLabels (labels cfg)
+    edges = intercalate "\n" . zipWith formatEdges outks $ 
+            (map (outE M.!) outks)
+    outE = outEdges cfg
+    outks = M.keys outE
+ 
+formatLabels :: M.Map Int Block -> String
+formatLabels (M.assocs -> labels) = intercalate "\n" . 
+                                    map (uncurry formatLabel) $ labels
+                                  
+formatEdges :: Int -> S.Set Int -> String
+formatEdges from toSet = intercalate "\n" . map (formatEdge from) $ 
+                         S.toList toSet
+                                  
+formatEdge :: Int -> Int -> String                                  
+formatEdge from to = "l_" ++ (show from) ++ " -> l_" ++ (show to)
+
+formatLabel :: Int -> Block -> String
+formatLabel i (Left state) = "l_" ++ (show i) ++ 
+                             " [label=\"" ++ (show i) ++ ": [" 
+                             ++ (pettyShowStatement state) ++ "]\"]"
+formatLabel i (Right bool) = "l_" ++ (show i) ++ " [label=\"" ++
+                             (show i) ++ ": [" ++ (pettyShowBool bool) 
+                             ++ "]\"]"
+
+simpleGraph :: ControlFlowGraph
+simpleGraph = CFG labels outEdges inEdges where
+  labels = M.fromList [(0, Left (Assign "x" (Number 0))),
+                       (1, Left (Assign "y" (Number 1))),
+                       (2, Right (RelOp Less (Var "x") 
+                                  (BinOp Plus (Var "a") (Var "b")))),
+                       (3, (Left (Assign "x" 
+                                  (BinOp Plus (Var "x") (Var "a"))))),
+                       (4, (Left (Assign "a" 
+                                  (BinOp Minus (Var "a") (Number 1))))),
+                       (5, (Left (Assign "b" 
+                                  (BinOp Plus (Var "b") (Var "x")))))]
+  outEdges = M.fromList [(0, S.singleton 1),
+                         (1, S.singleton 2),
+                         (2, S.fromList [3, 5]),
+                         (3, S.singleton 4),
+                         (4, S.singleton 2),
+                         (5, S.empty)]
+  inEdges = M.fromList [(0, S.empty),
+                        (1, S.singleton 0),
+                        (2, S.fromList [1, 4]),
+                        (3, S.singleton 2),
+                        (4, S.singleton 3),
+                        (5, S.singleton 2)]
+
 
 \end{code}
 The decorate function takes a program, and returns a map from a
@@ -264,4 +347,6 @@ cfg2 = CFG (decorate ast2) out ins where
   flist = S.fromList
 
 \end{code}
+
+
 
