@@ -16,25 +16,56 @@ import Input
 import Test.HUnit hiding (State)
 
 \end{code}
+
 A block is any part of a program that must be labeled.  For this
 language, it's either a boolean expression, an assignment, or 
 a skip.
+
 \begin{code}
 type Block = Either Statement Boolean
 
 \end{code}
+
 A Control Flow Graph is a collection of labeled blocks and edges.
+
 \begin{code}
 data ControlFlowGraph = CFG { labels :: M.Map Int Block, 
                               outEdges  :: M.Map Int (S.Set Int),
                               inEdges :: M.Map Int (S.Set Int)} deriving (Show, Eq)
 
+simpleGraph :: ControlFlowGraph
+simpleGraph = CFG labels outEdges inEdges where
+  labels = M.fromList [(0, Left (Assign "x" (Number 0))),
+                       (1, Left (Assign "y" (Number 1))),
+                       (2, Right (RelOp Less (Var "x") 
+                                  (BinOp Plus (Var "a") (Var "b")))),
+                       (3, (Left (Assign "x" 
+                                  (BinOp Plus (Var "x") (Var "a"))))),
+                       (4, (Left (Assign "a" 
+                                  (BinOp Minus (Var "a") (Number 1))))),
+                       (5, (Left (Assign "b" 
+                                  (BinOp Plus (Var "b") (Var "x")))))]
+  outEdges = M.fromList [(0, S.singleton 1),
+                         (1, S.singleton 2),
+                         (2, S.fromList [3, 5]),
+                         (3, S.singleton 4),
+                         (4, S.singleton 2),
+                         (5, S.empty)]
+  inEdges = M.fromList [(0, S.empty),
+                        (1, S.singleton 0),
+                        (2, S.fromList [1, 4]),
+                        (3, S.singleton 2),
+                        (4, S.singleton 3),
+                        (5, S.singleton 2)]
+
 \end{code}
-formatCFGasDot takes a ControlFlowGraph and formats it as a DOT graph string.
+
+|formatCFGasDot| takes a |ControlFlowGraph| and formats it as a DOT graph string.
 For example:
 
-'formatCFGasDOT simpleGraph' returns
+'formatCFGasDOT simpleGraph' returns:
 
+\begin{verbatim}
 digraph {
 l_0 [label="0: [x := 0]"]
 l_1 [label="1: [y := 1]"]
@@ -48,14 +79,19 @@ l_2 -> l_3
 l_2 -> l_5
 l_3 -> l_4
 l_4 -> l_2
-
 }
+\end{verbatim}
 
 Once compiled:
-dot -Tpng "simpleGraph.dot" > "simpleGraph.png"
+
+\begin{verbatim}dot -Tpng "simpleGraph.dot" > "simpleGraph.png"\end{verbatim}
 
 Produces the image:
-<INSERT simpleGraph.png HERE!!>
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{tests/simpleGraph.png}
+\end{center}
+
 \begin{code}
 formatCFGasDOT :: ControlFlowGraph -> String
 formatCFGasDOT cfg = "digraph {\n" ++ nodes ++ "\n" ++ edges ++ "\n}" 
@@ -85,83 +121,77 @@ formatLabel i (Right bool) = "l_" ++ (show i) ++ " [label=\"" ++
                              (show i) ++ ": [" ++ (pettyShowBool bool) 
                              ++ "]\"]"
 
-simpleGraph :: ControlFlowGraph
-simpleGraph = CFG labels outEdges inEdges where
-  labels = M.fromList [(0, Left (Assign "x" (Number 0))),
-                       (1, Left (Assign "y" (Number 1))),
-                       (2, Right (RelOp Less (Var "x") 
-                                  (BinOp Plus (Var "a") (Var "b")))),
-                       (3, (Left (Assign "x" 
-                                  (BinOp Plus (Var "x") (Var "a"))))),
-                       (4, (Left (Assign "a" 
-                                  (BinOp Minus (Var "a") (Number 1))))),
-                       (5, (Left (Assign "b" 
-                                  (BinOp Plus (Var "b") (Var "x")))))]
-  outEdges = M.fromList [(0, S.singleton 1),
-                         (1, S.singleton 2),
-                         (2, S.fromList [3, 5]),
-                         (3, S.singleton 4),
-                         (4, S.singleton 2),
-                         (5, S.empty)]
-  inEdges = M.fromList [(0, S.empty),
-                        (1, S.singleton 0),
-                        (2, S.fromList [1, 4]),
-                        (3, S.singleton 2),
-                        (4, S.singleton 3),
-                        (5, S.singleton 2)]
-
 
 \end{code}
-The decorate function takes a program, and returns a map from a
+
+The |decorate| function takes a program, and returns a map from a
 label int to a block.
+
 \begin{code}
 decorate :: Statement -> M.Map Int Block
 decorate = M.fromList . flip evalState 0 . decorate'
 
 \end{code}
+
 If a statement is an assignment, label it.
+
 \begin{code}
 decorate' :: Statement -> State Int [(Int,Block)]
 decorate' a@(Assign s arith) = (:[]) <$> (,Left a) <$> getIncrement
 
 \end{code}
-If a statement is a Skip, label it.
+
+If a statement is a |Skip|, label it.
+
 \begin{code}
 decorate' Skip = (:[]) <$> (,Left Skip) <$> getIncrement
 
 \end{code}
-If a statement is a Sequence of statements, then label each one.
+
+If a statement is a sequence of statements, then label each one.
+
 \begin{code}
 decorate' (Seq s1 s2) = decorate2 s1 s2
 
 \end{code}
+
 If a statement is an if then else, label the then
 and else statements, as well as the boolean expression.
+
 \begin{code}
 decorate' con@(If bool s1 s2) = (:) <$> (,Right bool) 
                                     <$> getIncrement
                                     <*> decorate2 s1 s2
 
 \end{code}
+
 If a statement is a while loop, label the boolean expression
 and the statement in the loop.
+
 \begin{code}
-decorate' whl@(While bool s) = (:) <$> (,Right bool) <$> getIncrement <*> decorate' s
+decorate' whl@(While bool s) = (:) <$> (,Right bool) <$>
+                                    getIncrement <*> decorate' s
 
 \end{code}
+
 Decorate two statements and collect their results.
+
 \begin{code}
 decorate2 :: Statement -> Statement -> State Int [(Int,Block)]
 decorate2 s1 s2 = (++) <$> (decorate' s1) <*> (decorate' s2)
 
 \end{code}
+
 Get the next label and then increment it for the next get call.
+
 \begin{code}
 getIncrement :: Num s => State s s
 getIncrement = get >>= \i -> put (i+1) >> return i
   
 \end{code}
+
 Computes a control flow graph for a program.
+
 \begin{code}
 controlFlowGraph :: Statement -> ControlFlowGraph
 controlFlowGraph g = CFG dec outs ins where
@@ -170,36 +200,49 @@ controlFlowGraph g = CFG dec outs ins where
   ins = computePredecessors outs
 
 \end{code}
-basicBlocks calculates the first level of basic blocks for 
+
+|basicBlocks| calculates the first level of basic blocks for 
 a program and returns them in a list.
+
 \begin{code}
 basicBlocks :: Statement -> [Statement]
 basicBlocks (Seq s1 s2) = basicBlocks s1 ++ basicBlocks s2
 basicBlocks s = [s]
 
 \end{code}
-computeSuccessors is a wrapper for computeSuccessors' which filters
+
+|computeSuccessors| is a wrapper for |computeSuccessors'| which filters
 out nonexistant labels.
+
 \begin{code}
-computeSuccessors s dec = M.map (S.filter (flip S.member dec)) (computeSuccessors' 0 (basicBlocks s))
+computeSuccessors s dec = M.map (S.filter (flip S.member dec))
+                           (computeSuccessors' 0 (basicBlocks s))
 
 \end{code}
-computeSuccessors computes the successor sets for a block.
+
+|computeSuccessors| computes the successor sets for a block.
 If a block is an assignment or skip, then the successor is the
 next block. 
+
 \begin{code}
-computeSuccessors' i ((Assign _ _):ss) = M.union m (computeSuccessors' (i+1) ss) where
+computeSuccessors' i ((Assign _ _):ss) = 
+ M.union m (computeSuccessors' (i+1) ss) where
   m = M.singleton i (S.singleton (i+1))
   
-computeSuccessors' i (Skip:ss) = M.union m (computeSuccessors' (i+1) ss) where
+computeSuccessors' i (Skip:ss) = 
+ M.union m (computeSuccessors' (i+1) ss) where
   m = M.singleton i (S.singleton (i+1))
 
 \end{code}
-If the block is an if statement, then compute successors of the then and else, and
-adjust the last blocks in both the then and else to be succeeded by the next basic block.
-the boolean expression in the if statement is succeeded by both the then and else blocks.
+
+If the block is an ``if'' statement, then compute successors of the ``then'' and ``else'', and
+adjust the last blocks in both the ``then'' and ``else'' to be succeeded by the next basic block.
+
+The boolean expression in the ``if'' statement is succeeded by both the ``then'' and ``else'' blocks.
+
 \begin{code}
-computeSuccessors' i ((If _ s1 s2):ss) = M.unions [m,m1',m2',computeSuccessors' c2 ss] where
+computeSuccessors' i ((If _ s1 s2):ss) = 
+ M.unions [m,m1',m2',computeSuccessors' c2 ss] where
   m = M.singleton i (S.fromList [i+1,i+2])
   c1 = countBlocks s1
   c2 = countBlocks s2
@@ -211,12 +254,16 @@ computeSuccessors' i ((If _ s1 s2):ss) = M.unions [m,m1',m2',computeSuccessors' 
   m2' = M.adjust (\_ -> S.singleton (i+c1+c2+1)) (length b2 + i) m2
 
 \end{code}
+
 If the block is a While loop then it's boolean expression is succeeded by
 the first basic block in the loop, and the next first block after the loop.
 The successor of the last basic block in the loop is adjusted to be succeeded
 by the loop expression.
-\begin{code}  
-computeSuccessors' i ((While _ s):ss) = M.unions [m,m1',computeSuccessors' (c+i+1) ss] where
+
+\begin{code}
+
+computeSuccessors' i ((While _ s):ss) = 
+ M.unions [m,m1',computeSuccessors' (c+i+1) ss] where
   m = M.singleton i (S.fromList [i+1,c+i+1])
   c = countBlocks s
   bs = basicBlocks s
@@ -232,18 +279,24 @@ updateLast m i v (If _ s1 s2) = i2 where
 updateLast m i v _ = M.adjust (\_ -> S.singleton v) i m
 
 \end{code}
-countBlocks returns the number of total blocks (not basic) in a program.
-\begin{code}  
+
+|countBlocks| returns the number of total blocks (not basic) in a program.
+
+\begin{code}
+
 countBlocks (Seq s1 s2) = countBlocks s1 + countBlocks s2
 countBlocks (If _ s1 s2) = 1 + (countBlocks s1 + countBlocks s2)
 countBlocks (While _ s) = 1 + countBlocks s
 countBlocks _ = 1
 
 \end{code}
-Compute Predecessors takes a collection of successor edges and returns
-a collection of predecessor edges.  The predecessors of some block b is
+
+|computePredecessors| takes a collection of successor edges and returns
+a collection of predecessor edges.  The predecessors of some block \emph b is
 equivalent to the set of blocks with b as a successor.
-\begin{code}  
+
+\begin{code}
+
 computePredecessors :: M.Map Int (S.Set Int)
                     -> M.Map Int (S.Set Int)
 computePredecessors outs = M.fromList . map go . M.keys $ outs where

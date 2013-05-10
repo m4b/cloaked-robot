@@ -1,0 +1,15 @@
+digraph {
+l_0 [label="0: [y := x]"]
+l_1 [label="1: [z := 1]"]
+l_2 [label="2: [y > 0]"]
+l_3 [label="3: [z := z * y]"]
+l_4 [label="4: [y := y - 1]"]
+l_5 [label="5: [y := 0]"]
+l_0 -> l_1
+l_1 -> l_2
+l_2 -> l_3
+l_2 -> l_5
+l_3 -> l_4
+l_4 -> l_2
+
+}

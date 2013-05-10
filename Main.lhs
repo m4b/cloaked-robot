@@ -97,6 +97,7 @@ main = do
                 print cfg
                 putStrLn . formatReachingDefinitions . 
                          reachingDefinitions $ cfg
+                putStrLn . formatCFGasDOT $ cfg
           Left err -> print err
      
 
@@ -124,11 +125,14 @@ After scanning and parsing, our dot printer gives its abstract syntax as:
 \includegraphics[width=1.0\textwidth]{tests/dotwhile.png}
 \end{center}
 
-The control flow graph for the above is:
 
-ENTER TEXT BITCHES
+The control flow graph for the program is:
 
-And finally, the entry and exit points for reaching definitions is:
+\begin{center}
+\includegraphics[width=0.5\textwidth]{tests/whilecfg.png}
+\end{center}
+
+And finally, the entry and exit points for reaching definitions are:
 
 \begin{equation*}
 \begin{aligned}
