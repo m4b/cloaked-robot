@@ -46,7 +46,7 @@
 
 \section{Introduction}\label{intro}
 
-This report contains our implementation of a scanner and parser for a basic programming language, and our data flow graph generation tools.  Also included is a printer for the AST of a program that outputs {\tt .gv} files to be used with a tool like dot to create graph-based images.
+This report contains our implementation of a scanner and parser for a basic programming language, and our data flow graph generation tools.  Also included are a printers for the AST and CFG of a program that outputs {\tt .gv} files to be used with a tool like dot to create graph-based images.
 
 For example, the program:
 
@@ -63,9 +63,17 @@ yields the following AST:
 \includegraphics[width=1.0\textwidth]{tests/ifexample.png}
 \end{center}
 
+whereas its CFG is:
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{tests/ifexamplecfg.png}
+\end{center}
+
 Our implementation is divided up into several sections, roughly corresponding to the problems given in the specification, and each its own Haskell module.  Each group member was more or less given a module to work on, but there was coding across modules happening on occasion.
 
 We spent approximately 50 man hours on the project.  We feel that over the course of the semester, our ability to code together as a team substantially improved, and we were able to work together in an efficient and robust manner.
+
+Unfortunately, due to time constraints, we were unable to complete the optional assignments, but we are very happy with our final implementation, and this report.
 
 %include AST.lhs
 %include Input.lhs
@@ -74,7 +82,7 @@ We spent approximately 50 man hours on the project.  We feel that over the cours
 
 \section{Main module}
 
-The main module puts everything together.
+For the compiled binary, if run with a valid text file containing a program written in the simple imperative language, we decided to simply write the ast and cfg dot graphs to files, and print the reaching definitions analysis to stdout; otherwise a syntax error message is printed to stdout. 
 
 \begin{code}
 
@@ -94,10 +102,9 @@ main = do
           Right ast -> do
                 writeFile "ast.gv" (dotPrinter ast)
                 let cfg = controlFlowGraph ast
-                print cfg
+                writeFile "cfg.gv" (formatCFGasDOT cfg)
                 putStrLn . formatReachingDefinitions . 
                          reachingDefinitions $ cfg
-                putStrLn . formatCFGasDOT $ cfg
           Left err -> print err
      
 
